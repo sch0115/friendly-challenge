@@ -21,9 +21,18 @@ node_modules/
 *.sln
 *.sw?
 
+# MCP
+.cursor/mcp.json
+
 # OS specific
 .DS_Store
 
 # Task files
 tasks.json
 tasks/ 
+
+dist/
+
+# Firebase
+backend/firebase/serviceAccountKey.json
+.cursor/mcp.json

@@ -1,0 +1,27 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    match /groups/{groupId} {
+      // Allow reads if user is authenticated and is a member of the group
+      allow read: if request.auth != null && exists(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid));
+      // Allow writes if user is authenticated and is an admin of the group (adjust path if needed)
+      allow write: if request.auth != null && (exists(/databases/$(database)/documents/groups/$(groupId)/admins/$(request.auth.uid)));
+    }
+    match /activities/{activityId} {
+      // Allow reads if user is authenticated
+      allow read: if request.auth != null;
+      // Allow writes if user is authenticated and is the creator (assuming createdBy field)
+      allow write: if request.auth != null && resource.data.createdBy == request.auth.uid;
+    }
+    // Add rules for activity logs later
+    match /activityLogs/{logId} {
+      // Allow reads if user is authenticated and part of the group
+      allow read: if request.auth != null && exists(/databases/$(database)/documents/groups/$(resource.data.groupId)/members/$(request.auth.uid));
+      // Allow writes if user is authenticated and is the user who logged the activity
+      allow write: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+  }
+} 
