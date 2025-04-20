@@ -1,6 +1,6 @@
 import * as admin from 'firebase-admin';
 // Make sure the path to your service account key is correct
-import * as serviceAccount from './serviceAccountKey.json';
+import * as serviceAccount from './serviceAccountKey.json'
 
 // Type assertion to satisfy TypeScript's expectations for the credential structure
 const serviceAccountParams = {

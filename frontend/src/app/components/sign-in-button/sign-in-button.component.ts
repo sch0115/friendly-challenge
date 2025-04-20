@@ -11,11 +11,11 @@ import { AuthService } from '../../services/auth.service'; // Adjust path if nee
       class="btn btn-primary" 
       (click)="handleGoogleSignIn()"
       [disabled]="loading"
-      [class.loading]="loading" // daisyUI loading spinner
+      [class.loading]="loading"
     >
       <span *ngIf="!loading">Sign in with Google</span>
       <span *ngIf="loading">Signing in...</span>
-    </button> <!-- Fixed closing tag -->
+    </button>
     <p *ngIf="error" class="text-error text-sm mt-2">{{ error }}</p>
   `,
   styles: ``
