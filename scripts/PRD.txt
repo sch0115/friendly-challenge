@@ -53,7 +53,7 @@ Friendly Challenge is a Progressive Web App (PWA) designed for groups of friends
 
 # Technical Architecture
 
-*   **Frontend:** PWA built with a modern JavaScript framework (e.g., React, Vue, Svelte - TBD). Will use Firebase SDK for Auth and potentially direct Firestore interaction for simple reads/writes where appropriate.
+*   **Frontend:** PWA built with **Angular (v19+)**. Styling implemented using **Tailwind CSS (v4+)** with **PostCSS** and the **daisyUI** component library (using the 'autumn' theme consistently). Will use Firebase SDK for Auth and potentially direct Firestore interaction for simple reads/writes where appropriate.
 *   **Backend:** Node.js API built with the NestJS framework. Deployed as a containerized service (e.g., Cloud Run, Fly.io) or potentially serverless functions (e.g., Google Cloud Functions) if leaning heavily into Firebase backend services.
 *   **Database:** Google Firebase Firestore as the primary database for storing user profiles, group information, activities, completion logs, and invitations.
 *   **Authentication:** Firebase Authentication using Google Sign-in provider.
