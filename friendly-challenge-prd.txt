@@ -1,0 +1,110 @@
+# Overview
+Friendly Challenge is a Progressive Web App (PWA) designed for groups of friends to motivate each other by participating in shared activities and competing on a leaderboard. It solves the problem of tracking friendly competitions and encourages consistent positive habits or fun challenges within a social group. It's for anyone looking to gamify personal goals or group activities with friends in an easy-to-access format.
+
+# Core Features
+
+*   **User Authentication:**
+    *   **What:** Secure sign-up and login using Google Authentication via Firebase Auth.
+    *   **Why:** Provides easy onboarding and user identification.
+    *   **How:** Frontend integrates with Firebase Auth SDK for Google Sign-in flow. Backend verifies tokens for API requests.
+*   **User Profiles:**
+    *   **What:** Basic user profiles displaying username, avatar (from Google), a short description/bio, and a motivational text/quote.
+    *   **Why:** Adds personalization and identity within groups.
+    *   **How:** User data (including Google profile info and custom fields) stored in Firestore upon first login. Users can edit description/motivational text later.
+*   **Group Creation & Management:**
+    *   **What:** Any authenticated user can create a challenge group. The creator initially defines the group's activities and their point values.
+    *   **Why:** Allows users to set up specific challenges tailored to their friend group.
+    *   **How:** API endpoint to create a group, storing group details (name, creator ID, member list, activity list) in Firestore. Separate endpoint for the creator to add/define activities (name, description, points) within their group.
+*   **Activity Suggestions:**
+    *   **What:** Group members can suggest new activities to be added to the group's list.
+    *   **Why:** Allows collaborative evolution of the challenge.
+    *   **How:** A simple mechanism (e.g., a dedicated list/collection in Firestore linked to the group) for members to submit suggestions. The group creator can view suggestions and manually add them as official activities using the activity definition feature. (Approval/auto-add is post-MVP).
+*   **Invitations:**
+    *   **What:** Group members (initially creator, potentially others later) can invite others to join via email. Invited users receive a notification/link (mechanism TBD - simple link for MVP) and can accept or reject.
+    *   **Why:** Controls group membership and allows expansion.
+    *   **How:** API endpoint to send an invitation (stores pending invite state in Firestore linked to email & group). Another endpoint for the invited user (once authenticated) to accept/reject, updating group membership and removing the pending invite. Email sending likely via a Firebase Extension or third-party service triggered by a Cloud Function.
+*   **Activity Logging:**
+    *   **What:** Users within a group can log their completion of a predefined activity.
+    *   **Why:** The core mechanic for tracking progress and points.
+    *   **How:** A simple form UI where the user selects an activity from the group's list. Upon submission, an entry is created in Firestore containing user ID, group ID, activity ID, timestamp (default to now), points awarded (from activity definition), and optional user-entered notes/count. Honor system - no verification.
+*   **Completion History View:**
+    *   **What:** Users can view their own history of completed activities within a specific group, showing the activity, date/time, and points earned.
+    *   **Why:** Allows users to track their personal progress and contributions.
+    *   **How:** API endpoint to query Firestore for completion logs filtered by user ID and group ID, sorted by timestamp. Frontend displays this list.
+*   **Group Leaderboard View:**
+    *   **What:** A view within each group showing a ranked list of all members based on their total accumulated points from logged activities within that group (all-time).
+    *   **Why:** Drives competition and engagement.
+    *   **How:** API endpoint that aggregates points from completion logs for all users within a specific group. Firestore queries or potentially a Cloud Function triggered on activity log creation to update aggregate scores for efficiency. Frontend displays the ranked list.
+*   **Progressive Web App (PWA):**
+    *   **What:** The application should be installable on devices, work offline to some extent (e.g., cached views), and offer an app-like experience.
+    *   **Why:** Improves accessibility and user experience across devices.
+    *   **How:** Frontend framework configured for PWA features (service worker, manifest file). Basic offline caching for static assets and potentially read-only views of last-loaded data.
+
+# User Experience
+
+*   **User Personas:** Socially connected individuals, friends looking for shared motivation, people wanting to gamify fitness or habit goals.
+*   **Key User Flows:**
+    1.  **Onboarding:** User lands on the app, clicks "Sign in with Google", authenticates, sees a dashboard/list of their groups.
+    2.  **Group Creation:** User navigates to "Create Group", enters details, defines initial activities.
+    3.  **Joining Group:** User receives an invite link, signs in, accepts the invitation, sees the group in their dashboard.
+    4.  **Core Loop:** User opens a group -> Views leaderboard -> Navigates to "Log Activity" -> Selects activity, adds optional details, submits -> Views updated personal history -> Checks leaderboard again later.
+    5.  **Inviting:** User goes to group settings -> Enters friend's email -> Sends invite.
+*   **UI/UX Considerations:** Clean, intuitive interface. Minimal friction for logging activities (smart defaults). Clear navigation between logging, history, and leaderboard within a group context. Mobile-first design approach suitable for PWA.
+
+# Technical Architecture
+
+*   **Frontend:** PWA built with a modern JavaScript framework (e.g., React, Vue, Svelte - TBD). Will use Firebase SDK for Auth and potentially direct Firestore interaction for simple reads/writes where appropriate.
+*   **Backend:** Node.js API built with the NestJS framework. Deployed as a containerized service (e.g., Cloud Run, Fly.io) or potentially serverless functions (e.g., Google Cloud Functions) if leaning heavily into Firebase backend services.
+*   **Database:** Google Firebase Firestore as the primary database for storing user profiles, group information, activities, completion logs, and invitations.
+*   **Authentication:** Firebase Authentication using Google Sign-in provider.
+*   **APIs:** RESTful or GraphQL API provided by the NestJS backend for core logic (group management, complex queries, activity logging validation, leaderboard aggregation).
+*   **Infrastructure:** Firebase Hosting for the PWA frontend. Backend hosting TBD (Cloud Run, Cloud Functions, etc.). Firebase Extensions or Cloud Functions triggered by Firestore events for background tasks (e.g., sending invite emails, potentially updating aggregate scores).
+
+# Development Roadmap
+
+*   **MVP Requirements:**
+    1.  **Foundation:** Basic NestJS project setup, Firebase project setup (Auth, Firestore).
+    2.  **Auth & Profile:** Google Sign-in integration, automatic profile creation in Firestore on first login (store Google ID, email, name, photo URL). Basic profile display (read-only).
+    3.  **Group Core:** API & UI for creating groups. API & UI for group creator to define activities (name, points). Ability to view groups user belongs to.
+    4.  **Activity Logging:** API & UI for selecting a group's activity and logging its completion (stores user, group, activity, timestamp, points).
+    5.  **Basic Views:** UI to display personal completion history within a group. UI to display simple all-time leaderboard for a group (basic aggregation).
+    6.  **PWA Shell:** Basic PWA configuration (manifest, service worker for caching static assets).
+*   **Post-MVP / Future Enhancements:**
+    *   Email invitations.
+    *   Accept/Reject invitation flow.
+    *   Activity suggestion mechanism & creator approval UI.
+    *   Editing user profiles (description, motivational text).
+    *   Editing group details/activities (by creator).
+    *   More sophisticated leaderboard options (time windows - weekly/monthly).
+    *   Real-time updates (e.g., leaderboard updates without refresh).
+    *   Notifications (e.g., when invited, when overtaken on leaderboard - potentially using Firebase Cloud Messaging).
+    *   Improved offline support.
+    *   Admin/moderation features.
+    *   Archiving old groups/challenges.
+    *   Custom avatars.
+
+# Logical Dependency Chain (MVP Focus)
+1.  Project Setup (NestJS, Firebase)
+2.  Authentication (Google Sign-in)
+3.  User Profile Creation (Firestore model, basic storage on login)
+4.  Group Creation API & DB Structure
+5.  Activity Definition API & DB Structure (linked to groups)
+6.  Group Viewing UI (list groups, select group)
+7.  Activity Logging API & DB Structure (linked to users, groups, activities)
+8.  Activity Logging UI (within a selected group)
+9.  Personal History API & UI (query logs by user/group)
+10. Leaderboard API & UI (aggregate points by user/group)
+11. Basic PWA Setup (manifest, service worker)
+
+# Risks and Mitigations
+
+*   **Scope Creep:** Stick strictly to MVP features first. Use Task Master to track defined scope. Mitigation: Regularly review task list against MVP definition. Defer non-essential features.
+*   **Firebase Costs:** Firestore reads/writes can add up with frequent activity logging and leaderboard updates. Mitigation: Design efficient queries. Use aggregated counters for leaderboards updated via Cloud Functions instead of querying all logs every time (maybe post-MVP optimisation). Monitor usage closely.
+*   **Real-time Complexity:** Implementing efficient real-time leaderboards can be tricky. Mitigation: MVP uses simple polling/manual refresh. Real-time updates using Firestore listeners or Realtime Database can be added later if needed.
+*   **PWA Nuances:** Ensuring consistent PWA behavior and installation prompts across browsers/OS. Mitigation: Test on target devices/browsers early. Follow PWA best practices.
+*   **UI/UX:** Ensuring the activity logging process is very low friction. Mitigation: Prototype and test the logging flow early. Use sensible defaults.
+
+# Appendix
+*   Firebase Documentation (Auth, Firestore, Hosting, Cloud Functions)
+*   NestJS Documentation
+*   PWA Guidelines (web.dev) 
