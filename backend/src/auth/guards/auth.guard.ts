@@ -1,10 +1,18 @@
-import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, UnauthorizedException, Logger, NotFoundException } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { AuthService } from '../auth.service'; // Import AuthService
+import { UserService } from '../../users/users.service'; // Import UserService
+import * as admin from 'firebase-admin'; // Import Firebase Admin
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-  constructor(private readonly authService: AuthService) {}
+  private readonly logger = new Logger(AuthGuard.name);
+
+  constructor(
+    private readonly authService: AuthService,
+    private readonly userService: UserService, // Inject UserService
+    private readonly firebaseAdmin: admin.app.App // Inject Firebase Admin
+  ) {}
 
   async canActivate(
     context: ExecutionContext,
@@ -15,16 +23,60 @@ export class AuthGuard implements CanActivate {
       throw new UnauthorizedException('Authorization token not found');
     }
     try {
-      // Verify the token using AuthService
       const decodedToken = await this.authService.verifyToken(token);
-      // Attach the decoded token (which includes user info) to the request object
-      // You might want to attach only specific user details (e.g., user ID) for security/simplicity
-      request['user'] = decodedToken; // Standard practice is to attach to request.user
+      request['user'] = decodedToken; // Attach decoded token to request
+      const uid = decodedToken.uid;
+
+      // --- Start: Ensure User Profile Exists --- 
+      try {
+        // Check if profile exists
+        await this.userService.getProfile(uid);
+        // Profile exists, update last login (fire-and-forget)
+        this.userService.updateLastLogin(uid).catch(err => {
+          this.logger.error(`Failed to update last login for ${uid} during guard check: ${err.message}`, err.stack);
+        });
+        this.logger.log(`Profile found for ${uid}, updated last login.`);
+
+      } catch (error) {
+        if (error instanceof NotFoundException) {
+          // Profile not found, create it
+          this.logger.log(`Profile not found for ${uid}. Creating new profile...`);
+          try {
+            const userRecord = await this.firebaseAdmin.auth().getUser(uid);
+            await this.userService.createProfile(uid, {
+              displayName: userRecord.displayName || '',
+              email: userRecord.email || '',
+              photoURL: userRecord.photoURL || '',
+              // Add default values for optional fields if needed
+              // description: '',
+              // motivationalText: '',
+            });
+            this.logger.log(`Successfully created profile for ${uid}.`);
+          } catch (creationError) {
+            this.logger.error(`Failed to fetch UserRecord or create profile for UID: ${uid}`, creationError.stack);
+            // Decide if failure to create profile should block access
+            // For now, we'll throw UnauthorizedException, but maybe just logging is sufficient
+            throw new UnauthorizedException('Failed to create user profile during authentication.');
+          }
+        } else {
+          // Unexpected error during profile check
+          this.logger.error(`Unexpected error checking profile for ${uid}: ${error.message}`, error.stack);
+          throw new UnauthorizedException('Error checking user profile during authentication.');
+        }
+      }
+      // --- End: Ensure User Profile Exists --- 
+
     } catch (e) {
-      // AuthService.verifyToken throws UnauthorizedException on failure
-      throw new UnauthorizedException('Invalid or expired token');
+       if (e instanceof UnauthorizedException) {
+         // Re-throw exceptions from verifyToken or our profile logic
+         throw e;
+       } else {
+         // Catch any other unexpected errors during token verification
+         this.logger.error(`Unexpected error during token verification: ${e.message}`, e.stack);
+         throw new UnauthorizedException('Authentication failed due to an unexpected error.');
+       }
     }
-    return true; // Token is valid, allow access
+    return true; // Token is valid and profile ensured, allow access
   }
 
   private extractTokenFromHeader(request: any): string | undefined {
