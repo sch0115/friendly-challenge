@@ -1,0 +1,18 @@
+<div *ngIf="group" class="card card-compact bg-base-100 shadow-xl hover:shadow-2xl transition-shadow duration-300 h-full flex flex-col">
+  <div class="card-body flex-grow">
+    <h2 class="card-title">{{ group.name }}</h2>
+    <p class="text-base-content/80 flex-grow">{{ group.description || 'No description provided.' }}</p>
+    <div class="text-sm text-base-content/60 mt-2">
+      <span class="badge badge-outline mr-2">{{ group.visibility | titlecase }}</span>
+      <!-- Display member count if available -->
+      <span *ngIf="group.membersCount">{{ group.membersCount }} members</span>
+    </div>
+  </div>
+  <div class="card-actions justify-end p-4 pt-0"> <!-- Ensure padding is correct -->
+    <!-- Use the component method or routerLink -->
+    <button class="btn btn-primary btn-sm" (click)="viewGroupDetails(group.id)">View Group</button>
+    <!-- Alternative using routerLink:
+    <a [routerLink]="['/groups', group.id]" class="btn btn-primary btn-sm">View Group</a>
+    -->
+  </div>
+</div> 

@@ -18,22 +18,8 @@
     <!-- Group List -->
     <div *ngIf="myGroups$ | async as groups">
       <div *ngIf="groups.length > 0; else noGroups" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        <!-- Group Card -->
-        <div *ngFor="let group of groups" class="card card-compact bg-base-100 shadow-xl hover:shadow-2xl transition-shadow duration-300">
-          <div class="card-body">
-            <h2 class="card-title">{{ group.name }}</h2>
-            <p class="text-base-content/80">{{ group.description || 'No description provided.' }}</p>
-            <div class="text-sm text-base-content/60 mt-2">
-              <span class="badge badge-outline mr-2">{{ group.visibility | titlecase }}</span>
-              <!-- Display member count if available -->
-              <span *ngIf="group.membersCount">{{ group.membersCount }} members</span>
-            </div>
-            <div class="card-actions justify-end mt-4">
-              <!-- TODO: Add link/button to view group details -->
-              <button class="btn btn-primary btn-sm">View Group</button>
-            </div>
-          </div>
-        </div>
+        <!-- Use the GroupItemComponent -->
+        <app-group-item *ngFor="let group of groups" [group]="group"></app-group-item>
       </div>
 
       <!-- No Groups Found -->
@@ -45,11 +31,12 @@
       </ng-template>
     </div>
 
-    <!-- Create Group Button (only show if there are groups) -->
-     <!-- Check if groups exist and length is greater than 0 -->
-     <div *ngIf="(myGroups$ | async)?.length" class="text-center mt-8">
-        <button class="btn btn-secondary" (click)="onCreateGroup()">Create Another Group</button>
-     </div>
+    <!-- Create Group Button (only show if there are groups and no error) -->
+    <div *ngIf="(myGroups$ | async) as groups">
+       <div *ngIf="groups && groups.length > 0 && !error" class="text-center mt-8">
+          <button class="btn btn-secondary" (click)="onCreateGroup()">Create Another Group</button>
+       </div>
+    </div>
 
   </div>
 </div> 

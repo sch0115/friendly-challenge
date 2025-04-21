@@ -5,13 +5,17 @@ import { GroupsService } from '../../core/services/groups.service';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { Router } from '@angular/router';
+import { GroupItemComponent } from '../../components/group-item/group-item.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [
+    CommonModule, 
+    RouterModule, 
+    GroupItemComponent
+  ],
   templateUrl: './dashboard.component.html',
-  styleUrls: ['./dashboard.component.scss'],
 })
 export class DashboardComponent implements OnInit, OnDestroy {
   myGroups$!: Observable<Group[]>; // Use definite assignment assertion
