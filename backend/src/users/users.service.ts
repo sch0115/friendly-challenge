@@ -1,16 +1,15 @@
-import { Injectable, NotFoundException, InternalServerErrorException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, InternalServerErrorException, Logger, Inject } from '@nestjs/common';
 import * as admin from 'firebase-admin';
 import { UserProfile } from './interfaces/user-profile.interface';
+import { FIREBASE_ADMIN } from '../firebase/firebase.constants';
 
 @Injectable()
 export class UserService {
   private readonly logger = new Logger(UserService.name);
-  // Assuming firebaseAdmin is provided globally or via a dedicated module
-  // If not, adjust injection based on how firebaseAdmin is provided (e.g., @Inject('FIREBASE_ADMIN'))
-  constructor(private readonly firebaseAdmin: admin.app.App) {}
+  constructor(@Inject(FIREBASE_ADMIN) private readonly firebaseAdminInstance: admin.app.App) {}
 
   private get db(): admin.firestore.Firestore {
-    return this.firebaseAdmin.firestore();
+    return this.firebaseAdminInstance.firestore();
   }
 
   /**
@@ -43,15 +42,23 @@ export class UserService {
   }
 
   /**
-   * Creates a new user profile in Firestore.
+   * Creates a new user profile in Firestore using info from the decoded token.
    * Should typically only be called once per user, often during first login.
-   * @param uid The user's Firebase Authentication UID.
-   * @param profileData Initial profile data (e.g., from auth provider).
+   * @param decodedToken The decoded Firebase ID token containing user info.
    * @throws InternalServerErrorException on Firestore errors.
    */
-  async createProfile(uid: string, profileData: Partial<Omit<UserProfile, 'uid' | 'createdAt' | 'lastLogin'>>): Promise<void> {
-    this.logger.log(`Attempting to create profile for UID: ${uid}`);
+  async createProfileFromToken(decodedToken: admin.auth.DecodedIdToken): Promise<void> {
+    const uid = decodedToken.uid;
+    this.logger.log(`Attempting to create profile for UID: ${uid} from token`);
     const userRef = this.db.collection('users').doc(uid);
+    
+    // Extract basic info directly from the token (might be slightly stale but usually sufficient)
+    const profileData: Partial<Omit<UserProfile, 'uid' | 'createdAt' | 'lastLogin'>> = {
+        displayName: decodedToken.name || '', // Use 'name' field from token
+        email: decodedToken.email || '',
+        photoURL: decodedToken.picture || '', // Use 'picture' field from token
+    };
+    
     try {
       await userRef.set({
         ...profileData,

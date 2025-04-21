@@ -1,0 +1,55 @@
+<div class="container mx-auto p-4">
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading()" class="flex justify-center items-center h-64">
+    <span class="loading loading-spinner loading-lg text-primary"></span>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error()" class="alert alert-error shadow-lg">
+    <div>
+      <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2 2m2-2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+      <span>Error! {{ error() }}</span>
+    </div>
+  </div>
+
+  <!-- Profile Display Container: Check for profile data first -->
+  <ng-container *ngIf="profile() as userProfile">
+    <!-- Inner Container: Check loading and error states -->
+    <div *ngIf="!isLoading() && !error()" class="card lg:card-side bg-base-100 shadow-xl">
+      <figure class="p-6">
+        <div class="avatar">
+          <div class="w-32 rounded-full ring ring-primary ring-offset-base-100 ring-offset-4">
+            <!-- Use the unwrapped userProfile here -->
+            <img [src]="userProfile.photoURL || 'assets/default-avatar.png'" [alt]="userProfile.displayName" />
+          </div>
+        </div>
+      </figure>
+      <div class="card-body">
+        <h2 class="card-title text-2xl">{{ userProfile.displayName }}</h2>
+        <p class="text-gray-500">{{ userProfile.email }}</p>
+
+        <div class="mt-4 space-y-2">
+          <div>
+            <h3 class="font-semibold">Description:</h3>
+            <p>{{ userProfile.description || 'No description provided.' }}</p>
+          </div>
+          <div>
+            <h3 class="font-semibold">Motivational Text:</h3>
+            <blockquote class="italic">{{ userProfile.motivationalText || 'No motivational text provided.' }}</blockquote>
+          </div>
+          <div class="text-sm text-gray-400 pt-4">
+              <p>Member since: {{ userProfile.createdAt | date:'longDate' }}</p>
+              <p>Last login: {{ userProfile.lastLogin | date:'medium' }}</p>
+          </div>
+        </div>
+
+        <div class="card-actions justify-end mt-4">
+          <!-- Edit button can be added here later -->
+          <!-- <button class="btn btn-primary">Edit Profile</button> -->
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
+</div>

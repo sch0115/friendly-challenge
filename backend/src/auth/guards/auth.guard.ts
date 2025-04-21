@@ -2,7 +2,6 @@ import { Injectable, CanActivate, ExecutionContext, UnauthorizedException, Logge
 import { Observable } from 'rxjs';
 import { AuthService } from '../auth.service'; // Import AuthService
 import { UserService } from '../../users/users.service'; // Import UserService
-import * as admin from 'firebase-admin'; // Import Firebase Admin
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -10,8 +9,7 @@ export class AuthGuard implements CanActivate {
 
   constructor(
     private readonly authService: AuthService,
-    private readonly userService: UserService, // Inject UserService
-    private readonly firebaseAdmin: admin.app.App // Inject Firebase Admin
+    private readonly userService: UserService // Only inject UserService
   ) {}
 
   async canActivate(
@@ -39,23 +37,15 @@ export class AuthGuard implements CanActivate {
 
       } catch (error) {
         if (error instanceof NotFoundException) {
-          // Profile not found, create it
-          this.logger.log(`Profile not found for ${uid}. Creating new profile...`);
+          // Profile not found, create it using info from the token
+          this.logger.log(`Profile not found for ${uid}. Creating new profile from token...`);
           try {
-            const userRecord = await this.firebaseAdmin.auth().getUser(uid);
-            await this.userService.createProfile(uid, {
-              displayName: userRecord.displayName || '',
-              email: userRecord.email || '',
-              photoURL: userRecord.photoURL || '',
-              // Add default values for optional fields if needed
-              // description: '',
-              // motivationalText: '',
-            });
+            // Call the updated service method
+            await this.userService.createProfileFromToken(decodedToken);
             this.logger.log(`Successfully created profile for ${uid}.`);
           } catch (creationError) {
-            this.logger.error(`Failed to fetch UserRecord or create profile for UID: ${uid}`, creationError.stack);
+            this.logger.error(`Failed create profile from token for UID: ${uid}`, creationError.stack);
             // Decide if failure to create profile should block access
-            // For now, we'll throw UnauthorizedException, but maybe just logging is sufficient
             throw new UnauthorizedException('Failed to create user profile during authentication.');
           }
         } else {
