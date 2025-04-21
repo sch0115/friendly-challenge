@@ -1,0 +1,74 @@
+<div class="card bg-base-100 shadow-md p-4">
+  <h3 class="text-lg font-semibold mb-4">Group Activities</h3>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="text-center p-4">
+    <span class="loading loading-dots loading-lg"></span>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error && !isLoading" class="alert alert-error shadow-lg">
+    <div>
+      <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+      <span>Error: {{ error }}</span>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!isLoading && !error && activities.length === 0 && !showEditForm" class="text-center p-4 text-base-content/70">
+    No activities defined for this group yet.
+  </div>
+
+  <!-- Activity List -->
+  <div *ngIf="!isLoading && !error && activities.length > 0 && !showEditForm" class="overflow-x-auto">
+    <table class="table w-full">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Description</th>
+          <th>Points</th>
+          <th *ngIf="canManageActivities">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let activity of activities" class="hover">
+          <td>{{ activity.name }}</td>
+          <td>{{ activity.description | slice:0:100 }}{{ activity.description.length > 100 ? '...' : '' }}</td>
+          <td>{{ activity.pointValue }}</td>
+          <td *ngIf="canManageActivities">
+            <button class="btn btn-ghost btn-xs" (click)="editActivity(activity)">Edit</button>
+            <button class="btn btn-ghost btn-xs text-error" (click)="confirmDelete(activity)">Delete</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Add/Edit Form -->
+  <div *ngIf="showEditForm">
+     <app-activity-form 
+        [initialData]="selectedActivity" 
+        (formSubmit)="handleFormSubmit($event)"
+        (onCancel)="cancelEdit()"
+        #activityFormComp> 
+      </app-activity-form>
+  </div>
+
+  <!-- Add Button (Show when not editing) -->
+   <div class="card-actions justify-end mt-4" *ngIf="canManageActivities && !showEditForm">
+       <button class="btn btn-primary btn-sm" (click)="addActivity()">Add New Activity</button>
+   </div>
+
+</div>
+
+<!-- Confirmation Modal (Example using DaisyUI Modal) -->
+<div class="modal" [class.modal-open]="showDeleteConfirm">
+  <div class="modal-box">
+    <h3 class="font-bold text-lg">Confirm Deletion</h3>
+    <p class="py-4">Are you sure you want to delete the activity "{{ activityToDelete?.name }}"?</p>
+    <div class="modal-action">
+      <button class="btn btn-error" (click)="deleteConfirmed()">Delete</button>
+      <button class="btn btn-ghost" (click)="cancelDelete()">Cancel</button>
+    </div>
+  </div>
+</div>

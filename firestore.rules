@@ -45,6 +45,68 @@ service cloud.firestore {
                        (get(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid)).data.role in ['creator', 'admin'] ||
                         (request.auth.uid == userId && request.method == 'delete')); // User leaving
       }
+
+      // Rules for the 'activities' subcollection within a group
+      match /activities/{activityId} {
+        // Allow any group member to read activities
+        allow read: if request.auth != null &&
+                      exists(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid));
+
+        // Allow creator or admins of the group to create, update, delete activities
+        allow write: if request.auth != null &&
+                       get(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid)).data.role in ['creator', 'admin'] &&
+                       // Validate activity data on create/update
+                       activityWriteValidation(request, resource);
+      }
+    }
+
+    // Helper function for activity write validation
+    function activityWriteValidation(request, resource) {
+      let data = request.resource.data;
+      return data.name is string && data.name.size() > 0 && data.name.size() <= 150 &&
+             data.description is string && data.description.size() > 0 && data.description.size() <= 1000 &&
+             data.pointValue is number && data.pointValue > 0 &&
+             data.groupId == resource.data.groupId && // Ensure groupId matches the parent group
+             (request.method == 'create' ? data.createdBy == request.auth.uid : true) && // Set creator on create
+             (request.method == 'create' ? data.createdAt == request.time : true) &&
+             (request.method == 'update' ? data.updatedAt == request.time : request.resource.data.keys().hasOnly(['name', 'description', 'pointValue', 'groupId', 'createdBy', 'createdAt', 'updatedAt'])); // Check allowed fields
+    }
+
+    // Rules for the top-level 'activityLogs' collection
+    match /activityLogs/{logId} {
+      // Allow create if user is authenticated, the log is for themselves,
+      // and they are a member of the group specified in the log.
+      allow create: if request.auth != null &&
+                      request.resource.data.userId == request.auth.uid &&
+                      exists(/databases/$(database)/documents/groups/$(request.resource.data.groupId)/members/$(request.auth.uid)) &&
+                      activityLogWriteValidation(request, resource); // Add data validation
+
+      // Allow read if the user is the one who created the log OR if they are a member of the group the log belongs to.
+      allow read: if request.auth != null &&
+                    (resource.data.userId == request.auth.uid ||
+                     exists(/databases/$(database)/documents/groups/$(resource.data.groupId)/members/$(request.auth.uid)));
+
+      // Generally, logs shouldn't be updated. Allow update only by the user for specific fields like 'notes'?
+      allow update: if request.auth != null &&
+                      request.auth.uid == resource.data.userId &&
+                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['notes', 'updatedAt']) && // Example: Only allow updating notes
+                      request.resource.data.updatedAt == request.time;
+
+      // Allow deletion only by the user who created it (or maybe group admins?)
+      allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
+    }
+
+    // Helper function for activity log write validation (create)
+    function activityLogWriteValidation(request, resource) {
+       let data = request.resource.data;
+       return data.userId == request.auth.uid &&
+              data.groupId is string && data.groupId.size() > 0 &&
+              data.activityId is string && data.activityId.size() > 0 &&
+              data.activityName is string && data.activityName.size() > 0 && // Denormalized name
+              data.timestamp == request.time &&
+              data.points is number && data.points >= 0 && // Allow 0 points?
+              (data.keys().has('notes') ? data.notes is string && data.notes.size() <= 500 : true) && // Optional notes validation
+              request.resource.data.keys().hasOnly(['userId', 'groupId', 'activityId', 'activityName', 'timestamp', 'points', 'notes']); // Ensure only allowed fields
     }
 
     match /{document=**} {

@@ -1,0 +1,53 @@
+<div class="card bg-base-200 shadow-xl p-6">
+  <h3 class="text-xl font-bold mb-4 card-title">{{ editMode ? 'Edit' : 'Add New' }} Activity</h3>
+
+  <form [formGroup]="activityForm" (ngSubmit)="onSubmit()" class="space-y-4">
+    <!-- Activity Name -->
+    <div class="form-control w-full">
+      <label class="label" for="name">
+        <span class="label-text">Activity Name</span>
+      </label>
+      <input type="text" id="name" formControlName="name" placeholder="e.g., Run 5km, Read a chapter" class="input input-bordered w-full" [class.input-error]="isInvalid('name')" />
+      <div *ngIf="isInvalid('name')" class="label text-error">
+        <span *ngIf="activityForm.controls['name'].errors?.['required']">Name is required.</span>
+        <span *ngIf="activityForm.controls['name'].errors?.['minlength']">Name must be at least 3 characters.</span>
+        <span *ngIf="activityForm.controls['name'].errors?.['maxlength']">Name cannot exceed 150 characters.</span>
+      </div>
+    </div>
+
+    <!-- Description -->
+    <div class="form-control w-full">
+      <label class="label" for="description">
+        <span class="label-text">Description</span>
+      </label>
+      <textarea id="description" formControlName="description" placeholder="Describe the activity" class="textarea textarea-bordered h-24" [class.textarea-error]="isInvalid('description')"></textarea>
+      <div *ngIf="isInvalid('description')" class="label text-error">
+        <span *ngIf="activityForm.controls['description'].errors?.['required']">Description is required.</span>
+        <span *ngIf="activityForm.controls['description'].errors?.['maxlength']">Description cannot exceed 1000 characters.</span>
+      </div>
+    </div>
+
+    <!-- Point Value -->
+    <div class="form-control w-full">
+      <label class="label" for="pointValue">
+        <span class="label-text">Points Awarded</span>
+      </label>
+      <input type="number" id="pointValue" formControlName="pointValue" placeholder="e.g., 10" class="input input-bordered w-full" [class.input-error]="isInvalid('pointValue')" />
+      <div *ngIf="isInvalid('pointValue')" class="label text-error">
+        <span *ngIf="activityForm.controls['pointValue'].errors?.['required']">Points are required.</span>
+        <span *ngIf="activityForm.controls['pointValue'].errors?.['min'] || activityForm.controls['pointValue'].errors?.['pattern']">Points must be a positive number.</span>
+         <span *ngIf="activityForm.controls['pointValue'].errors?.['max']">Points cannot exceed 10000.</span>
+      </div>
+    </div>
+
+    <!-- Submit/Cancel Buttons -->
+    <div class="card-actions justify-end pt-4 space-x-2">
+      <button type="button" class="btn btn-ghost" (click)="onCancel.emit()" *ngIf="editMode">Cancel</button>
+      <button type="submit" class="btn btn-primary" [disabled]="activityForm.invalid || isLoading">
+        <span *ngIf="isLoading" class="loading loading-spinner"></span>
+         {{ isLoading ? (editMode ? 'Saving...' : 'Adding...') : (editMode ? 'Save Changes' : 'Add Activity') }}
+      </button>
+    </div>
+
+  </form>
+</div>
