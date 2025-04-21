@@ -9,9 +9,9 @@
       </label>
       <input type="text" id="name" formControlName="name" placeholder="Enter group name" class="input input-bordered w-full" [class.input-error]="isInvalid('name')" />
       <div *ngIf="isInvalid('name')" class="label text-error">
-        <span *ngIf="groupForm.controls['name'].errors?.[required]">Name is required.</span>
-        <span *ngIf="groupForm.controls['name'].errors?.[minlength]">Name must be at least 3 characters.</span>
-        <span *ngIf="groupForm.controls['name'].errors?.[maxlength]">Name cannot exceed 100 characters.</span>
+        <span *ngIf="groupForm.controls['name'].errors?.['required']">Name is required.</span>
+        <span *ngIf="groupForm.controls['name'].errors?.['minlength']">Name must be at least 3 characters.</span>
+        <span *ngIf="groupForm.controls['name'].errors?.['maxlength']">Name cannot exceed 100 characters.</span>
       </div>
     </div>
 
@@ -22,7 +22,7 @@
       </label>
       <textarea id="description" formControlName="description" placeholder="Describe your group's challenge" class="textarea textarea-bordered h-24" [class.textarea-error]="isInvalid('description')"></textarea>
        <div *ngIf="isInvalid('description')" class="label text-error">
-        <span *ngIf="groupForm.controls['description'].errors?.[maxlength]">Description cannot exceed 500 characters.</span>
+        <span *ngIf="groupForm.controls['description'].errors?.['maxlength']">Description cannot exceed 500 characters.</span>
       </div>
     </div>
 
