@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+@plugin "daisyui" {
+  themes: autumn --default, dark --prefersdark;
+  root: ":root";
+  include: ;
+  exclude: ;
+  prefix: ;
+  logs: true;
+}
+
+/* You can add any other global styles below */
+body {
+  /* Example: Add some base padding or font settings if needed */
+} 

@@ -1,0 +1,73 @@
+<div class="max-w-2xl mx-auto p-6 card bg-base-200 shadow-xl">
+  <h2 class="text-2xl font-bold mb-6 card-title">Create New Challenge Group</h2>
+
+  <form [formGroup]="groupForm" (ngSubmit)="onSubmit()" class="space-y-4">
+    <!-- Group Name -->
+    <div class="form-control w-full">
+      <label class="label" for="name">
+        <span class="label-text">Group Name</span>
+      </label>
+      <input type="text" id="name" formControlName="name" placeholder="Enter group name" class="input input-bordered w-full" [class.input-error]="isInvalid('name')" />
+      <div *ngIf="isInvalid('name')" class="label text-error">
+        <span *ngIf="groupForm.controls['name'].errors?.[required]">Name is required.</span>
+        <span *ngIf="groupForm.controls['name'].errors?.[minlength]">Name must be at least 3 characters.</span>
+        <span *ngIf="groupForm.controls['name'].errors?.[maxlength]">Name cannot exceed 100 characters.</span>
+      </div>
+    </div>
+
+    <!-- Description -->
+    <div class="form-control w-full">
+      <label class="label" for="description">
+        <span class="label-text">Description (Optional)</span>
+      </label>
+      <textarea id="description" formControlName="description" placeholder="Describe your group's challenge" class="textarea textarea-bordered h-24" [class.textarea-error]="isInvalid('description')"></textarea>
+       <div *ngIf="isInvalid('description')" class="label text-error">
+        <span *ngIf="groupForm.controls['description'].errors?.[maxlength]">Description cannot exceed 500 characters.</span>
+      </div>
+    </div>
+
+    <!-- Visibility -->
+    <div class="form-control w-full">
+       <label class="label">
+        <span class="label-text">Visibility</span>
+      </label>
+      <div class="flex gap-4">
+         <label class="label cursor-pointer">
+           <input type="radio" formControlName="visibility" value="public" class="radio radio-primary mr-2" checked />
+           <span class="label-text">Public</span> 
+         </label>
+         <label class="label cursor-pointer">
+           <input type="radio" formControlName="visibility" value="private" class="radio radio-primary mr-2" />
+           <span class="label-text">Private</span> 
+         </label>
+      </div>
+       <div *ngIf="isInvalid('visibility')" class="label text-error">
+        <span>Please select visibility.</span>
+      </div>
+    </div>
+
+    <!-- Tags (Optional) -->
+    <div class="form-control w-full">
+      <label class="label" for="tags">
+        <span class="label-text">Tags (Optional, comma-separated)</span>
+      </label>
+      <input type="text" id="tags" formControlName="tagsInput" placeholder="e.g., fitness, reading, coding" class="input input-bordered w-full" [class.input-error]="isInvalid('tags')" />
+      <div class="label">
+        <span class="label-text-alt">Max 10 tags, 20 chars each.</span>
+      </div>
+      <div *ngIf="isInvalid('tags')" class="label text-error">
+         <span *ngIf="groupForm.controls['tags'].errors?.['invalidTags']">Some tags are invalid (max 20 chars).</span>
+         <span *ngIf="groupForm.controls['tags'].errors?.['maxTags']">Cannot exceed 10 tags.</span>
+      </div>
+    </div>
+
+    <!-- Submit Button -->
+    <div class="card-actions justify-end pt-4">
+       <button type="submit" class="btn btn-primary" [disabled]="groupForm.invalid || isLoading">
+         <span *ngIf="isLoading" class="loading loading-spinner"></span>
+         {{ isLoading ? 'Creating...' : 'Create Group' }}
+       </button>
+    </div>
+
+  </form>
+</div>
