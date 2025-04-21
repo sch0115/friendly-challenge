@@ -25,18 +25,19 @@ export class UserService {
     try {
       const userDoc = await userRef.get();
       if (!userDoc.exists) {
-        this.logger.warn(`Profile not found for UID: ${uid}`);
+        this.logger.warn(`[${uid}] Profile not found.`);
         throw new NotFoundException(`User profile not found for UID: ${uid}`);
       }
-      this.logger.log(`Successfully fetched profile for UID: ${uid}`);
-      // We cast here, assuming the data conforms to the interface.
-      // Consider adding runtime validation (e.g., with class-validator) for robustness.
-      return { uid, ...userDoc.data() } as UserProfile;
+      const profile = { uid, ...userDoc.data() } as UserProfile;
+      this.logger.log(`[${uid}] Successfully fetched profile.`);
+      this.logger.debug(`[${uid}] Profile data: ${JSON.stringify(profile)}`);
+      return profile;
     } catch (error) {
       if (error instanceof NotFoundException) {
+        this.logger.warn(`[${uid}] getProfile failed: ${error.message}`);
         throw error;
       }
-      this.logger.error(`Failed to fetch profile for UID: ${uid}`, error.stack);
+      this.logger.error(`[${uid}] Failed to fetch profile: ${error.message}`, error.stack);
       throw new InternalServerErrorException('Failed to fetch user profile.');
     }
   }
@@ -49,25 +50,26 @@ export class UserService {
    */
   async createProfileFromToken(decodedToken: admin.auth.DecodedIdToken): Promise<void> {
     const uid = decodedToken.uid;
-    this.logger.log(`Attempting to create profile for UID: ${uid} from token`);
+    this.logger.log(`[${uid}] Attempting to create profile from token`);
     const userRef = this.db.collection('users').doc(uid);
     
-    // Extract basic info directly from the token (might be slightly stale but usually sufficient)
     const profileData: Partial<Omit<UserProfile, 'uid' | 'createdAt' | 'lastLogin'>> = {
-        displayName: decodedToken.name || '', // Use 'name' field from token
-        email: decodedToken.email || '',
-        photoURL: decodedToken.picture || '', // Use 'picture' field from token
+        displayName: decodedToken.name || 'Anonymous User',
+        email: decodedToken.email || 'No Email Provided',
+        photoURL: decodedToken.picture || 'assets/default-avatar.png',
     };
+    this.logger.debug(`[${uid}] Profile data from token: ${JSON.stringify(profileData)}`);
     
     try {
-      await userRef.set({
+      const fullProfile = {
         ...profileData,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        lastLogin: admin.firestore.FieldValue.serverTimestamp(), // Set lastLogin on creation too
-      });
-      this.logger.log(`Successfully created profile for UID: ${uid}`);
+        lastLogin: admin.firestore.FieldValue.serverTimestamp(),
+      };
+      await userRef.set(fullProfile);
+      this.logger.log(`[${uid}] Successfully created profile.`);
     } catch (error) {
-      this.logger.error(`Failed to create profile for UID: ${uid}`, error.stack);
+      this.logger.error(`[${uid}] Failed to create profile: ${error.message}`, error.stack);
       throw new InternalServerErrorException('Failed to create user profile.');
     }
   }
@@ -80,22 +82,22 @@ export class UserService {
    * @throws InternalServerErrorException on other Firestore errors.
    */
   async updateProfile(uid: string, profileData: Partial<Omit<UserProfile, 'uid' | 'createdAt'>>): Promise<void> {
-    this.logger.log(`Attempting to update profile for UID: ${uid}`);
+    this.logger.log(`[${uid}] Attempting to update profile.`);
+    this.logger.debug(`[${uid}] Update data: ${JSON.stringify(profileData)}`);
     const userRef = this.db.collection('users').doc(uid);
     try {
-      // Use update to ensure the document exists and avoid overwriting createdAt
-      await userRef.update({
+      const updatePayload = {
         ...profileData,
-        lastLogin: admin.firestore.FieldValue.serverTimestamp(), // Always update lastLogin on profile update
-      });
-      this.logger.log(`Successfully updated profile for UID: ${uid}`);
+        lastLogin: admin.firestore.FieldValue.serverTimestamp(),
+      };
+      await userRef.update(updatePayload);
+      this.logger.log(`[${uid}] Successfully updated profile.`);
     } catch (error) {
-       // Firestore 'update' throws an error if the document doesn't exist (code 5, NOT_FOUND)
       if (error.code === 5) {
-         this.logger.warn(`Attempted to update non-existent profile for UID: ${uid}`);
+         this.logger.warn(`[${uid}] Attempted to update non-existent profile.`);
          throw new NotFoundException(`User profile not found for UID: ${uid}`);
       }
-      this.logger.error(`Failed to update profile for UID: ${uid}`, error.stack);
+      this.logger.error(`[${uid}] Failed to update profile: ${error.message}`, error.stack);
       throw new InternalServerErrorException('Failed to update user profile.');
     }
   }
@@ -105,22 +107,18 @@ export class UserService {
    * @param uid The user's Firebase Authentication UID.
    */
   async updateLastLogin(uid: string): Promise<void> {
-    this.logger.log(`Updating last login for UID: ${uid}`);
+    this.logger.log(`[${uid}] Attempting to update last login timestamp.`);
     const userRef = this.db.collection('users').doc(uid);
      try {
         await userRef.update({
             lastLogin: admin.firestore.FieldValue.serverTimestamp(),
         });
-        this.logger.log(`Successfully updated last login for UID: ${uid}`);
+        this.logger.log(`[${uid}] Successfully updated last login.`);
      } catch (error) {
-         // Log error but don't necessarily throw critical exception if profile doesn't exist yet
-         // or if the update fails, as profile fetch/creation logic should handle existence.
          if (error.code === 5) {
-             this.logger.warn(`Profile not found when attempting to update last login for UID: ${uid}. This might happen during initial login flow.`);
+             this.logger.warn(`[${uid}] Profile not found when attempting to update last login. This might happen during initial login flow.`);
          } else {
-             this.logger.error(`Failed to update last login for UID: ${uid}`, error.stack);
-             // Optionally re-throw or handle differently depending on requirements
-             // throw new InternalServerErrorException('Failed to update last login time.');
+             this.logger.error(`[${uid}] Failed to update last login: ${error.message}`, error.stack);
          }
      }
   }

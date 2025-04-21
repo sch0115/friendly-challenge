@@ -3,7 +3,7 @@ import { authGuard } from './guards/auth.guard'; // Adjust path if guard locatio
 import { LoginComponent } from './pages/login/login.component';
 import { DashboardComponent } from './pages/dashboard/dashboard.component';
 import { GroupDetailComponent } from './pages/group-detail/group-detail.component';
-import { CreateGroupComponent } from './pages/create-group/create-group.component';
+// import { CreateGroupComponent } from './pages/create-group/create-group.component';
 
 export const routes: Routes = [
     // Example: Redirect root to a dashboard or home page (if exists)
@@ -22,11 +22,11 @@ export const routes: Routes = [
         component: DashboardComponent,
         canActivate: [authGuard]
     },
-    {
-        path: 'groups/create',
-        component: CreateGroupComponent,
-        canActivate: [authGuard]
-    },
+    // {
+    //     path: 'groups/create',
+    //     component: CreateGroupComponent,
+    //     canActivate: [authGuard]
+    // },
     {
         path: 'groups/:id',
         component: GroupDetailComponent,

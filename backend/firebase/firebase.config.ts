@@ -18,6 +18,7 @@ const serviceAccountParams = {
   ...(serviceAccount.universe_domain && { universeDomain: serviceAccount.universe_domain }),
 };
 
+console.log('Initializing Firebase Admin SDK...');
 export const firebaseAdmin = admin.initializeApp({
   credential: admin.credential.cert(serviceAccountParams as admin.ServiceAccount),
 });

@@ -3,17 +3,24 @@ import {
   Auth,
   GoogleAuthProvider,
   signInWithPopup,
-  signOut,
+  signOut as firebaseSignOut,
   User,
   getIdToken,
   setPersistence,
-  browserLocalPersistence // Or browserSessionPersistence
+  browserLocalPersistence, // Or browserSessionPersistence
+  authState, // Import authState
+  UserCredential
 } from '@angular/fire/auth'; // Using AngularFire
+import { Observable } from 'rxjs'; // Import Observable
+import { map } from 'rxjs/operators'; // Import map operator
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
+  // Observable to track authentication state
+  readonly isLoggedIn$: Observable<boolean>;
+  readonly user$: Observable<User | null>;
 
   constructor(private auth: Auth) {
     // Set session persistence (e.g., keep user logged in across browser sessions)
@@ -22,13 +29,18 @@ export class AuthService {
       .catch((error) => {
         console.error('Error setting auth persistence', error);
       });
+
+    // Initialize observables based on Firebase auth state
+    this.user$ = authState(this.auth);
+    this.isLoggedIn$ = this.user$.pipe(map(user => !!user));
   }
 
   /**
    * Initiates the Google Sign-in popup flow.
    * @returns A promise that resolves with the UserCredential on successful sign-in.
    */
-  async signInWithGoogle() {
+  async signInWithGoogle(): Promise<UserCredential> {
+    console.log('Signing in with Google');
     const provider = new GoogleAuthProvider();
     try {
       const userCredential = await signInWithPopup(this.auth, provider);
@@ -46,7 +58,7 @@ export class AuthService {
    */
   async signOut() {
     try {
-      await signOut(this.auth);
+      await firebaseSignOut(this.auth);
       console.log('User signed out');
     } catch (error) {
       console.error('Sign out error', error);

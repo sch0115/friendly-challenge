@@ -1,0 +1,32 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+
+- **Use NestJS Built-in Logger**
+    - Inject the `Logger` service from `@nestjs/common` into your classes (controllers, services, guards, etc.).
+    - Instantiate the logger, preferably with the class context: `private readonly logger = new Logger(MyClassName.name);`
+
+- **Log Key Information**
+    - **Entry/Exit Points:** Log when entering and exiting important methods, especially in controllers and services. Include relevant parameters.
+    - **Key Variables:** Log the values of important variables at critical points in the logic flow. Use `debug` level for verbose data.
+    - **Control Flow:** Log decisions made in conditional statements (`if`/`else`).
+    - **External Calls:** Log before and after making calls to external services, databases, or APIs.
+    - **Errors:** Always log detailed error information (message, stack trace) within `catch` blocks using `this.logger.error()` or `this.logger.warn()`.
+
+- **Log Levels**
+    - `this.logger.log()`: General information, routine operations, entry/exit.
+    - `this.logger.warn()`: Potential issues, non-critical errors, expected errors (like 'Not Found').
+    - `this.logger.error()`: Actual unexpected errors, exceptions caught. Include stack trace: `this.logger.error(\`Error message: \${error.message}\`, error.stack);`
+    - `this.logger.debug()`: Verbose information, detailed variable values, helpful only during active debugging. (Consider making these conditional based on environment later).
+    - `this.logger.verbose()`: Even more detailed than debug.
+
+- **Context is Key**
+    - Include context in your log messages (e.g., User ID, Request ID, relevant parameters) to make tracing easier.
+    - Example: `this.logger.log(\`[UserID: \${userId}] Fetching profile...\`);`
+
+- **Maintenance**
+    - Remove or comment out excessive `debug` or `verbose` logs once a feature is stable.
+    - Keep `log`, `warn`, and `error` logs for monitoring production (configure log levels appropriately for production environments).
