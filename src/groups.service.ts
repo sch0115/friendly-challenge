@@ -8,6 +8,7 @@ import { Timestamp } from 'firebase-admin/firestore';
 export class GroupsService {
   private readonly logger = new Logger(GroupsService.name);
   private readonly groupsCollection = 'groups';
+  private readonly membersSubcollection = 'members'; // Define subcollection name
 
   constructor(private readonly firebaseService: FirebaseService) {}
 
@@ -38,7 +39,7 @@ export class GroupsService {
       const groupDocRef = await groupsRef.add(newGroupData);
 
       // Add the creator to the members subcollection as well
-      const memberRef = groupDocRef.collection('members').doc(userId);
+      const memberRef = groupDocRef.collection(this.membersSubcollection).doc(userId);
       await memberRef.set(creatorMember);
 
       this.logger.log(`Group created successfully with ID: ${groupDocRef.id} by user ${userId}`);
@@ -68,24 +69,63 @@ export class GroupsService {
     }
   }
 
-  // Placeholder for findGroupsByUser (more complex query)
+  // Find all groups a user is a member of
   async findGroupsByUser(userId: string): Promise<Group[]> {
-    this.logger.log(`Fetching groups for user: ${userId}`);
-    try {
-      const groupsRef = this.firebaseService.firestore.collection(this.groupsCollection);
-      // Query based on the 'members' subcollection - requires composite index on members subcollection
-      // Or query based on the `members` array field if using that approach
-      // Example using array field (less scalable):
-      // const querySnapshot = await groupsRef.where('members', 'array-contains', { uid: userId, role: 'member' /* Adjust based on actual structure */ }).get();
-      // Example querying based on subcollection existence (more complex client-side or requires separate user->groups mapping)
-      // This example assumes a simple query for groups created by the user for now
-      const querySnapshot = await groupsRef.where('createdBy', '==', userId).get();
+    this.logger.log(`Fetching groups where user ${userId} is a member`);
+    const firestore = this.firebaseService.firestore;
+    const groups: Group[] = [];
 
-      const groups = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Group));
+    try {
+      // Perform a collection group query on the 'members' subcollection
+      // IMPORTANT: Requires a Firestore index on the 'members' collection group, filtering on 'uid'
+      // Example index definition (firestore.indexes.json):
+      // {
+      //   "collectionGroup": "members",
+      //   "queryScope": "COLLECTION_GROUP",
+      //   "fields": [
+      //     { "fieldPath": "uid", "order": "ASCENDING" }
+      //   ]
+      // }
+      const membersQuerySnapshot = await firestore
+        .collectionGroup(this.membersSubcollection)
+        .where('uid', '==', userId)
+        .get();
+
+      if (membersQuerySnapshot.empty) {
+        this.logger.log(`User ${userId} is not a member of any groups.`);
+        return [];
+      }
+
+      // Get the parent group document for each membership found
+      const groupPromises = membersQuerySnapshot.docs.map(memberDoc => {
+        const groupRef = memberDoc.ref.parent.parent; // Get the parent document reference (the group)
+        if (!groupRef) {
+             this.logger.warn(`Could not get parent group reference for member doc ${memberDoc.id}`);
+             return null;
+        }
+        return groupRef.get();
+      });
+
+      const groupSnapshots = await Promise.all(groupPromises);
+
+      groupSnapshots.forEach(groupSnap => {
+        if (groupSnap?.exists) {
+          groups.push({ id: groupSnap.id, ...groupSnap.data() } as Group);
+        }
+      });
+
+      // Optional: Sort groups (e.g., by creation date)
+      groups.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
+
       return groups;
     } catch (error) {
-      this.logger.error(`Failed to fetch groups for user ${userId}`, error.stack);
-      throw new InternalServerErrorException('Could not fetch groups.');
+      this.logger.error(`Failed to fetch groups for user ${userId} using collection group query`, error.stack);
+      // Check for specific Firestore errors (e.g., index missing)
+      if (error.code === 'FAILED_PRECONDITION' && error.message.includes('index')) {
+          this.logger.error('Firestore index missing for members collection group query on uid.');
+          throw new InternalServerErrorException('Database query configuration error. Index required.');
+      }
+      throw new InternalServerErrorException('Could not fetch user groups.');
     }
   }
 
